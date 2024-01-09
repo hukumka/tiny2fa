@@ -58,7 +58,7 @@ impl Default for KeyStore {
 
 impl KeyStore {
     fn current_version() -> u16 {
-        return 1;
+        1
     }
 
     fn path() -> Result<PathBuf> {
@@ -83,7 +83,7 @@ impl KeyStore {
     fn save(&self) -> Result<()> {
         let path = Self::path()?;
         println!("{:?}", path);
-        std::fs::write(path, &serde_yaml::to_string(self)?)?;
+        std::fs::write(path, serde_yaml::to_string(self)?)?;
         Ok(())
     }
 }
