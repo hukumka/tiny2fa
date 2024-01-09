@@ -23,13 +23,21 @@ enum Commands {
     Init { key: String },
     /// Generates new temporary token
     Generate,
+    /// Generates new temporary token and copies it into clipboard
+    #[cfg(feature = "gencopy")]
+    GenCopy,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Init { key } => init(&cli.scope, &key),
-        Commands::Generate => generate(&cli.scope),
+        Commands::Generate => {
+            println!("{}", generate(&cli.scope)?);
+            Ok(())
+        }
+        #[cfg(feature = "gencopy")]
+        Commands::GenCopy => generate_and_copy(&cli.scope),
     }
 }
 
@@ -88,8 +96,17 @@ fn init(scope: &str, key: &str) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "gencopy")]
+fn generate_and_copy(scope: &str) -> Result<()> {
+    let code = generate(scope)?;
+    let mut clip = arboard::Clipboard::new().unwrap();
+    clip.set_text(format!("{}", code))?;
+    std::thread::sleep(std::time::Duration::from_secs(30));
+    Ok(())
+}
+
 /// Generate temporary token
-fn generate(scope: &str) -> Result<()> {
+fn generate(scope: &str) -> Result<u32> {
     let store = KeyStore::load()?;
     let key = store.scopes.get(scope).ok_or_else(|| {
         format!(
@@ -102,8 +119,7 @@ fn generate(scope: &str) -> Result<()> {
     let counter_value = (timestamp() - time_offset) / interval;
     let full_code = generate_code(key, counter_value)?;
     let human_code = full_code % 1_000_000;
-    println!("{}", human_code);
-    Ok(())
+    Ok(human_code)
 }
 
 fn timestamp() -> u64 {
